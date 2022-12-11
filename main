@@ -1,0 +1,199 @@
+# Press Umschalt+F10 to execute it or replace it with your code.
+# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
+
+def is_star(pattern, pattern_pos):
+    return pattern[pattern_pos] == '*' and \
+        not is_doublestar(pattern, pattern_pos) and '*' or None
+
+def match_star(matching, text, pattern):
+    # Wir gehen davon aus, dass das Mustermuster nicht passt
+    result = False
+
+    # Wir durchlaufen das Textmuster und suchen nach einer passenden Stelle für das Sternchen (*)
+    for i in range(len(text)):
+        # Wenn wir eine passende Stelle gefunden haben, prüfen wir, ob das restliche Mustermuster
+        # auf das restliche Textmuster passt
+        if matching[i] and match(matching, text[i+1:], pattern[1:]):
+            result = True
+            break
+
+    return result
+           
+def is_doublestar(pattern, pattern_pos):
+    return pattern_pos < len(pattern) - 1 and \
+           pattern[pattern_pos:pattern_pos + 2] == "**" and "**" or None
+
+
+def match_doublestar(matching, text, pattern):
+    # Wir gehen davon aus, dass das Mustermuster passt
+    result = True
+
+    for i in range(len(text)):
+    # Wenn das Mustermuster nicht auf das aktuelle Textmusterstück passt, setzen wir result auf False
+        if not match(matching, text[i:], pattern[1:]):
+            result = False
+            break
+    
+    return result
+
+
+
+
+
+def is_question(pattern, pattern_pos):
+    return pattern[pattern_pos] == '?' and '?' or None
+
+
+# Funktion zum Überprüfen, ob das Mustermuster das Textmuster mithilfe eines Fragezeichens (?) passt
+def match_question(matching, text, _):
+    # Wir gehen davon aus, dass das Mustermuster passt
+    result = True
+
+    # Wir prüfen, ob das Textmuster mindestens ein Zeichen lang ist
+    if len(text) > 0:
+        # Wenn das Textmuster mindestens ein Zeichen lang ist, prüfen wir, ob das restliche Mustermuster
+        # auf das restliche Textmuster passt
+        result = match(matching, text[1:], pattern[1:])
+
+    return result
+
+
+
+def is_range(pattern, pattern_pos):
+    if pattern[pattern_pos] != '[':
+        return None
+
+    for i in range(pattern_pos, len(pattern)):
+        if pattern[i] == ']':
+            return pattern[pattern_pos:i+1]
+
+    raise Exception("Illegal undelimited Pattern")
+
+
+def match_range(matching, text, rangge):
+    # Wir gehen davon aus, dass das Mustermuster nicht passt
+    result = False
+
+    # Wir expandieren den Bereich und prüfen, ob das erste Zeichen des Textmusters
+    # in dem expandierten Bereich enthalten ist
+    if len(text) > 0 and text[0] in expand(rangge):
+        # Wenn das erste Zeichen des Textmusters in dem expandierten Bereich enthalten ist,
+        # prüfen wir, ob das restliche Mustermuster auf das restliche Textmuster passt
+        result = match(matching, text[1:], pattern[len(rangge):])
+
+    return result
+
+def is_primitive(pattern, pattern_pos):
+    return pattern[pattern_pos]
+
+
+def match_primitive(matching, text, primitive):
+    # Wir gehen davon aus, dass das Mustermuster passt
+    result = True
+
+    # Wir prüfen, ob das Textmuster mindestens ein Zeichen lang ist
+    if len(text) > 0:
+        # Wenn das Textmuster mindestens ein Zeichen lang ist, prüfen wir, ob das erste Zeichen des Textmusters
+        # dem primitiven Zeichen im Mustermuster entspricht
+        result = text[0] == primitive
+
+        # Wenn das erste Zeichen des Textmusters dem primitiven Zeichen im Mustermuster entspricht,
+        # prüfen wir, ob das restliche Mustermuster auf das restliche Textmuster passt
+        if result:
+            result = match(matching, text[1:], pattern[1:])
+
+    return result
+
+
+def get_matching(text):
+    result = [None for _ in list(range(len(text)+3))]
+    result[-1] = True
+    for i in range(0, len(text)):
+        result[i] = False
+    return result
+
+
+def expand(rangge):
+    result = ""
+    rangge = rangge[1:-1]
+    for i in range(len(rangge)):
+        if rangge[i] == '-':
+            assert 0 < i < len(rangge) - 1
+            for j in range(ord(rangge[i-1])+1, ord(rangge[i+1])):
+                result = result + chr(j)
+        else:
+            result = result + rangge[i]
+    return result
+
+
+# Funktion zum Überprüfen, ob das angegebene Mustermuster und Textmuster gemäß den in der Aufgabe beschriebenen
+# Regeln übereinstimmen und True/False zurückgibt
+def match(matching, text, pattern):
+    result = False
+
+    if len(pattern) == 0:
+        result = len(text) == 0
+
+    elif len(text) > 0:
+        # Wir prüfen, ob das Mustermuster das Textmuster mithilfe eines Sternchens (*) passt
+        star = is_star(pattern, 0)
+        if star:
+            result = match_star(matching, text, pattern)
+
+        # Wir prüfen, ob das Mustermuster das Textmuster mithilfe eines Doppelsternchens (**) passt
+        doublestar = is_doublestar(pattern, 0)
+        if not result and doublestar:
+            result = match_doublestar(matching, text, pattern)
+
+        # Wir prüfen, ob das Mustermuster das Textmuster mithilfe eines Fragezeichens (?) passt
+        question = is_question(pattern, 0)
+        if not result and question:
+            result = match_question(matching, text, pattern)
+
+        # Wir prüfen, ob das Mustermuster das Textmuster mithilfe eines Bereichs passt
+        rangge = is_range(pattern, 0)
+        if not result and rangge:
+            result = match_range(matching, text, rangge)
+
+        # Wir prüfen, ob das Mustermuster das Textmuster mithilfe eines primitiven Zeichenmusters passt
+        primitive = is_primitive(pattern, 0)
+        if not result and primitive:
+            result = match_primitive(matching, text, primitive)
+
+    return result
+
+# Funktion zum Überprüfen, ob das angegebene Mustermuster und Textmuster gemäß den in der Aufgabe beschriebenen
+# Regeln übereinstimmen und die Liste der passenden Namen zurückgibt
+def globber(pattern, list):
+  result = []
+  # Iterieren über die Dateinamen in der Liste
+  for name in list:
+    # Fügen Sie dem Muster ein Sternzeichen * hinzu, um die Regeln für * zu berücksichtigen
+    pattern = pattern.replace('*', '.*')
+    # Fügen Sie dem Muster ein Fragezeichen ? hinzu, um die Regeln für ? zu berücksichtigen
+    pattern = pattern.replace('?', '.')
+    # Fügen Sie dem Muster zwei Sternzeichen ** hinzu, um die Regeln für ** zu berücksichtigen
+    pattern = pattern.replace('**', '.*')
+    # Fügen Sie dem Muster eine in [] geklammerte Menge hinzu, um die Regeln für [] zu berücksichtigen
+    pattern = pattern.replace('[', '[')
+    pattern = pattern.replace(']', ']')
+    # Prüfen, ob der Dateiname dem Muster entspricht
+    if re.fullmatch(pattern, name):
+      result.append(name)
+  return result
+
+
+
+
+# Press the green button in the gutter to run the script.
+if __name__ == '__main__':
+    print(globber('*.txt', ["users/tank/heusch/WS_22/test.txt"]), "\n")
+    print(globber('**.txt', ["users/tank/heusch/WS_22/test.txt"]), "\n")
+    print(globber('**.text', ["users/tank/heusch/WS_22/test.txt"]), "\n")
+    print(globber('**test', ["users/tank/heusch/WS_22/test.txt"]), "\n")
+    print(globber('**test.???', ["users/tank/heusch/WS_22/test.txt"]), "\n")
+    print(globber('*/*/*/[A-Z]*/*.txt', ["users/tank/heusch/WS_22/test.txt"]), "\n")
+    print(globber('*/*/*/[X-Z]*/*.txt', ["users/tank/heusch/WS_22/test.txt"]), "\n")
+    print(globber('*/*/*/S*/*.txt', ["users/tank/heusch/WS_22/test.txt"]), "\n")
+
+# See PyCharm help at https://www.jetbrains.com/help/pycharm/
