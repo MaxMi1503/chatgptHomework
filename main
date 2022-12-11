@@ -165,22 +165,43 @@ def match(matching, text, pattern):
 # Funktion zum Überprüfen, ob das angegebene Mustermuster und Textmuster gemäß den in der Aufgabe beschriebenen
 # Regeln übereinstimmen und die Liste der passenden Namen zurückgibt
 def globber(pattern, list):
-  result = []
-  # Iterieren über die Dateinamen in der Liste
-  for name in list:
-    # Fügen Sie dem Muster ein Sternzeichen * hinzu, um die Regeln für * zu berücksichtigen
-    pattern = pattern.replace('*', '.*')
-    # Fügen Sie dem Muster ein Fragezeichen ? hinzu, um die Regeln für ? zu berücksichtigen
-    pattern = pattern.replace('?', '.')
-    # Fügen Sie dem Muster zwei Sternzeichen ** hinzu, um die Regeln für ** zu berücksichtigen
-    pattern = pattern.replace('**', '.*')
-    # Fügen Sie dem Muster eine in [] geklammerte Menge hinzu, um die Regeln für [] zu berücksichtigen
-    pattern = pattern.replace('[', '[')
-    pattern = pattern.replace(']', ']')
-    # Prüfen, ob der Dateiname dem Muster entspricht
-    if re.fullmatch(pattern, name):
-      result.append(name)
-  return result
+    result = []
+    for name in list:
+        index = 0
+        matched = True
+        for char in pattern:
+            if char == '*':
+                index = name.find('*', index)
+                if index == -1:
+                    matched = False
+                    break
+            elif char == '?':
+                index = name.find('?', index)
+                if index == -1:
+                    matched = False
+                    break
+            elif char == '**':
+                index = name.find('**', index)
+                if index == -1:
+                    matched = False
+                    break
+            elif char == '[':
+                end_index = name.find(']', index)
+                if end_index == -1:
+                    matched = False
+                    break
+                chars = name[index + 1:end_index]
+                if char not in chars:
+                    matched = False
+                    break
+            else:
+                if char != name[index]:
+                    matched = False
+                    break
+            index += 1
+        if matched:
+            result.append(name)
+    return result
 
 
 
